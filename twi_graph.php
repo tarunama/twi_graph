@@ -55,28 +55,32 @@ Class MainGraph {
         }
     }
 
-    function MainProcess($smarty) {
-        // フォームに入力があった場合
-        $data_count  = '';
-        $err_msg = '';        
-        $screen_name = $_POST['screen_name'];
-        
-        $result = $this->GetTweets($screen_name);
-        $this->IsNull($result);
-
+    //　ここなんとかしたい
+    function CollectDate($result) {
         $result_data = array();
         // create at : ツイートされた日時のみ取得する
         foreach ( $result as $data) {
             // 鍵付きのアカウントの場合
-            if ( is_array( $data ) === false) { break; }
-       
+            if ( is_array($data) === false) { break; }
+
             foreach ($data as $key => $val) {
                 // 日付けをキーにして配列に挿入
-                if( $key === 'created_at') {
+                if($key === 'created_at') {
                     $result_data[] = date("Y/n/j", strtotime($val));
                 } 
             }
         }
+        return $result_data;
+    }
+
+    function MainProcess($smarty, $screen_name) {
+        // フォームに入力があった場合
+        $data_count  = '';
+        $err_msg = '';        
+        
+        $result = $this->GetTweets($screen_name);
+        $this->IsNull($result);
+        $result_data = $this->CollectDate($result);
         $this->CheckException($result_data, $smarty);
         
         $date_count = array_count_values($result_data);
@@ -85,15 +89,15 @@ Class MainGraph {
         $smarty-> assign('err_msg', $err_msg);
         $smarty-> display('twi_graph.tpl');
     }
-
 }
 
 $twi_graph = new MainGraph();
 $smarty    = $twi_graph->Smarty();
 
 if ($_POST) {
-    $twi_graph->IsInput($_POST['screen_name'], $smarty);
-    $twi_graph->MainProcess($smarty);
+    $screen_name = htmlspecialchars($_POST['screen_name']);
+    $twi_graph->IsInput(trim($screen_name), $smarty);
+    $twi_graph->MainProcess($smarty, $screen_name);
 } else {
     $twi_graph->init($smarty);
 }
