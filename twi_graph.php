@@ -40,9 +40,9 @@ Class MainGraph {
         return json_decode($req, true);
     }
 
-    function CheckException($result_data, $smarty) {
+    function CheckException($result, $smarty) {
         // アカウントが存在しない場合・鍵付きである場合
-        if ( count( $result_data ) === 0 ) {
+        if (count($result) === 0) {
             $err_msg = '入力されたアカウントは存在していないか、プライベート設定がされています';
             $this->ReturnError($smarty, $err_msg);
         }
@@ -55,34 +55,31 @@ Class MainGraph {
         }
     }
 
-    //　ここなんとかしたい
     function CollectDate($result) {
+        if (empty($result)) { return NULL; }
+        
+        // ツイートされた日時のみ取得する
+        $end = count($result);
         $result_data = array();
-        // create at : ツイートされた日時のみ取得する
-        foreach ( $result as $data) {
-            // 鍵付きのアカウントの場合
-            if ( is_array($data) === false) { break; }
-
-            foreach ($data as $key => $val) {
-                // 日付けをキーにして配列に挿入
-                if($key === 'created_at') {
-                    $result_data[] = date("Y/n/j", strtotime($val));
-                } 
-            }
+        
+        //　ここなんとかしたい
+        for($i = 0; $i < $end; $i++) {
+            if (empty($result[$i]['created_at'])) { continue; }
+            $date = date("Y/n/j", strtotime($result[$i]['created_at']));
+            array_push($result_data, $date);
         }
         return $result_data;
     }
 
     function MainProcess($smarty, $screen_name) {
         // フォームに入力があった場合
-        $data_count  = '';
+        $data_count = '';
         $err_msg = '';        
         
         $result = $this->GetTweets($screen_name);
         $this->IsNull($result);
-        $result_data = $this->CollectDate($result);
+        $result_data = $this->CollectDate($result, $smarty);
         $this->CheckException($result_data, $smarty);
-        
         $date_count = array_count_values($result_data);
 
         $smarty-> assign('result', $date_count);
